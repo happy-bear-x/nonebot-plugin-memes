@@ -83,6 +83,10 @@ block_cmd = on_command("禁用表情", block=True, priority=11, permission=PERM_
 unblock_cmd = on_command("启用表情", block=True, priority=11, permission=PERM_EDIT)
 block_cmd_gl = on_command("全局禁用表情", block=True, priority=11, permission=PERM_GLOBAL)
 unblock_cmd_gl = on_command("全局启用表情", block=True, priority=11, permission=PERM_GLOBAL)
+disable_group_user = on_command("禁用群员表情制作", block=True, priority=11, permission=PERM_GLOBAL)
+disable_user = on_command("禁用用户表情制作", block=True, priority=11, permission=PERM_GLOBAL)
+enable_group_user = on_command("启用群员表情制作", block=True, priority=11, permission=PERM_GLOBAL)
+enable_user = on_command("启用用户表情制作", block=True, priority=11, permission=PERM_GLOBAL)
 
 
 def get_user_id():
