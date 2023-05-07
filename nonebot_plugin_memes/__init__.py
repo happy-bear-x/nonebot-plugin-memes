@@ -88,6 +88,8 @@ disable_user = on_command("禁用用户表情制作", block=True, priority=11, p
 enable_group_user = on_command("启用群员表情制作", block=True, priority=11, permission=PERM_GLOBAL)
 enable_user = on_command("启用用户表情制作", block=True, priority=11, permission=PERM_GLOBAL)
 
+disable_user_set = set()
+disable_group_user_dict = {}
 
 def get_user_id():
     def dependency(
@@ -106,6 +108,15 @@ def get_user_id():
             cid += str(event.user_id)
         return cid
 
+    return Depends(dependency)
+
+def get_user_info_list():
+    def dependency(
+            event: Union[V11MEvent, V12MEvent]
+    ) -> list:
+        if isinstance(event, V11GMEvent) or isinstance(event, V12GMEvent):
+            return [event.user_id, event.group_id]
+        return [event.user_id]
     return Depends(dependency)
 
 
@@ -260,6 +271,48 @@ async def _(matcher: Matcher, msg: Union[V11Msg, V12Msg] = CommandArg()):
     await matcher.finish("\n".join(messages))
 
 
+@disable_group_user.handle()
+async def _(event:Union[V11GMEvent, V12GMEvent], messages:Union[V11Msg, V12Msg] = CommandArg()):
+    group_id = event.group_id
+    if messages :
+        dis_group_set = disable_group_user_dict.setdefault(group_id, set())
+        for msg in messages:
+            if msg.type == 'at':
+                qq = int(msg.data['qq'])
+                dis_group_set.add(qq)
+    await disable_group_user.finish("禁用群员表情制作成功")
+
+@enable_group_user.handle()
+async def _(event:Union[V11GMEvent, V12GMEvent], messages:Union[V11Msg, V12Msg] = CommandArg()):
+    group_id = event.group_id
+    if messages :
+        dis_group_set = disable_group_user_dict.setdefault(group_id, set())
+        for msg in messages:
+            if msg.type == 'at':
+                qq = int(msg.data['qq'])
+                dis_group_set.remove(qq)
+    await disable_group_user.finish("启用群员表情制作成功")
+
+@disable_user.handle()
+async def _(messages:Union[V11Msg, V12Msg] = CommandArg()):
+    if messages :
+        for msg in messages:
+            if msg.type == 'at':
+                qq = int(msg.data['qq'])
+                disable_user_set.add(qq)
+    await disable_group_user.finish("禁用用户使用表情制作成功")
+
+@enable_user.handle()
+async def _(messages:Union[V11Msg, V12Msg] = CommandArg()):
+    if messages :
+        for msg in messages:
+            if msg.type == 'at':
+                qq = int(msg.data['qq'])
+                disable_user_set.remove(qq)
+    await disable_group_user.finish("启用用户使用表情制作成功")
+
+
+
 async def process(
     bot: Union[V11Bot, V12Bot],
     matcher: Matcher,
@@ -314,7 +367,15 @@ def handler(meme: Meme) -> T_Handler:
         state: T_State,
         matcher: Matcher,
         user_id: str = get_user_id(),
+        user_info: list = get_user_info_list()
     ):
+        qq = user_info[0]
+        if qq in disable_user_set:
+            return
+        if len(user_info) > 1:
+            dis_group_user_list = disable_group_user_dict.setdefault(user_info[1], set())
+            if qq in dis_group_user_list:
+                return
         if not meme_manager.check(user_id, meme.key):
             return
 
